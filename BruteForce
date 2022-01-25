@@ -1,0 +1,119 @@
+from math import dist, sqrt
+from tkinter import *
+from datetime import datetime
+from time import sleep
+from math import factorial
+from sklearn.utils import shuffle
+import random
+
+
+class City:
+    #x, y, name = None, None, None
+
+    def __init__(self, size):
+        self.x = random.randint(0, size)
+        self.y = random.randint(0, size)
+        self.connections = 0
+        self.name = self.generateName()
+
+    def generateName(self):
+        vowels = ['a','e','i','o','u']
+        consonants = ['b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'q', 'r', 's', 't', 'v', 'w', 'y', 'z']
+
+        name = ""
+        prob = 0
+        i = 0
+        while(True):
+            if(i > 2):
+                prob += 10 # increase probability to end name generation
+            
+            if(i % 2 == 0):  # if even number
+                name += random.choice(vowels)
+            else:            # if odd number
+                name += random.choice(consonants)
+            
+            if(random.randint(0, 100) < prob):
+                return name
+            i += 1
+
+    def getName(self):
+        return self.name
+
+    def getCoords(self):
+        return [self.x, self.y]
+
+    # def get closest city?
+
+def display(canvas, top):
+    # pack canvas before loop
+    canvas.pack()
+    # window loop
+    top.mainloop()
+
+# display cities as dots, bigger than coordinates, and assign a number
+def drawBoard(cities, canvas, dotsize):
+    i = 1
+    for city in cities:
+        #print(str(city.getName()) + ": " + str(city.getCoords()))
+        canvas.create_oval([c - dotsize for c in city.getCoords()], [c + dotsize for c in city.getCoords()], fill='red')
+        canvas.create_text([c - 10 for c in city.getCoords()], fill='blue', text=str(i))
+        i += 1
+
+# window
+top = Tk()
+size = 1000
+scale = 1.01
+dotsize = 5
+nodeAmount = 5
+possibilities = int(factorial(nodeAmount - 1)/2)
+# make window
+top.geometry("{}x{}".format(int(size*scale), int(size*scale)))
+
+# make canvas
+canvas = Canvas(top, bg="white", height=str(size), width=str(size))
+
+# get seed 
+seed = input("seed? ")
+if(seed == ""):
+    random.seed(datetime.now())
+else:
+    random.seed(seed)
+
+# make list of cities / generate them
+cities = [City(size) for count in range(nodeAmount)]
+
+# connect nodes
+distances = []
+shortestIndex = 0
+for j in range(0, possibilities):
+    canvas.delete("all")
+    drawBoard(cities, canvas, dotsize)
+    cities = shuffle(cities, random_state=j+1)
+    fullDistance = 0
+    # connect all nodes for this possibility 
+    for i in range(0, len(cities)-1):
+        canvas.create_line(cities[i].getCoords(), cities[i+1].getCoords(), fill='black', width=2, arrow='last')
+        fullDistance += sqrt(pow(cities[i+1].x - cities[i].x, 2) + pow(cities[i+1].y - cities[i].y, 2))
+
+        canvas.pack()
+        top.update()
+    print("pathlength: " + str(fullDistance) + " index: " + str(j))
+    if(not distances or fullDistance < distances[distances.index(min(distances))]):
+        shortestIndex = j
+    distances.append(fullDistance)
+    x = input("")
+
+# draw best solution
+canvas.delete("all")
+cities = shuffle(cities, random_state=shortestIndex) # shuffle like it was what best solution
+
+# connect all nodes for this possibility 
+for i in range(0, len(cities)-1):
+    drawBoard(cities, canvas, dotsize)
+    canvas.create_line(cities[i].getCoords(), cities[i+1].getCoords(), fill='black', width=2, arrow='last')
+    fullDistance += sqrt(pow(cities[i+1].x - cities[i].x, 2) + pow(cities[i+1].y - cities[i].y, 2))
+
+    canvas.pack()
+    top.update()
+print("shortest path: " + str(min(distances)) + " index: " + str(distances.index(min(distances))))
+display(canvas, top)
